@@ -35,15 +35,22 @@
 %\allsectionsfont{\centering \normalfont\scshape} % Make all sections centered, the default font and small caps
 
 \usepackage{fancyhdr} % Custom headers and footers
+\usepackage{url} % Custom headers and footers
 \pagestyle{fancyplain} % Makes all pages in the document conform to the custom headers and footers
 \fancyhead{} % No page header - if you want one, create it in the same way as the footers below
 \fancyfoot[L]{} % Empty left footer
+\usepackage{hyperref}
+\usepackage{listings}
 \fancyfoot[C]{} % Empty center footer
 \fancyfoot[R]{\thepage} % Page numbering for right footer
 \renewcommand{\headrulewidth}{0pt} % Remove header underlines
 \renewcommand{\footrulewidth}{0pt} % Remove footer underlines
 \setlength{\headheight}{13.6pt} % Customize the height of the header
-
+\usepackage[
+	type={CC},
+	modifier={by-nc-sa},
+	version={3.0},
+]{doclicense}
 
 
 \setlength\parindent{0pt} % Removes all indentation from paragraphs - comment this line for an assignment with lots of text
@@ -59,7 +66,7 @@
 \normalfont \normalsize 
 \textsc{{ Ingeniería de Servidores (2016-2017)} \\ Grado en Ingeniería Informática \\ Universidad de Granada} \\ [25pt] % Your university, school and/or department name(s)
 \horrule{0.5pt} \\[0.4cm] % Thin top horizontal rule
-\huge Experimental: Despliegue y uso de software de monitorización de cluster Nagios \\ % The assignment title
+\huge Despliegue y uso de monitor software para cluster de servidores: Nagios \\ % The assignment title
 \horrule{2pt} \\[0.5cm] % Thick bottom horizontal rule
 }
 
@@ -72,27 +79,27 @@
 %----------------------------------------------------------------------------------------
 
 \begin{document}
-\maketitle
 
+\maketitle % Muestra el Título
 \newpage
-\tableofcontents
+\tableofcontents % para generar el índice de contenidos
 
+\listoffigures
 \newpage
 
+
+ 
+ 
 %----------------------------------------------------------------------------------------
 %	Cuesti´on 1
 %----------------------------------------------------------------------------------------
 
-\section{Introducción}
-
-En este documento se pretende explicar de forma clara y guiada el proceso de instalación y despliegue de una herramienta para monitorización de clusters o granjas de máquinas conectadas entre sí.
+\section{INTRO.}
 
 
-%------------------------------------------------
-
-\section{Infraestructura}
-
-Para el presente ejercicio se ha preparado un escenario con una infraestructura virtual basada en tres máquinas virtuales conectadas bajo un mismo segmento de red.
-
-
+\bibliographystyle{unsrt} % hay varias formas de citar
+\bibliography{referencias} %archivo citas.bib que contiene las entradas 
 \end{document}
+
+
+
