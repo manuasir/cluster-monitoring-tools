@@ -91,7 +91,23 @@
 
 \section{Introducción}
 En este documento se pretende explicar de forma guiada el proceso de instalación y uso de software para monitorización de recursos en un entorno de clúster o granja de servidores, así como ilustrar mediante casos prácticos la forma de aplicarlos  en entornos reales de producción. A modo de ejemplo se realizarán una serie de experimentos con el fin de mostrar el comportamiento de este tipo de software y en qué medida es útil para el administrador de sistemas. Se ha escogido Ubuntu Server 16.0 como sistema operativo a utilizar en las máquinas, las cuales tendrán desplegados distintos servicios para que funcionen de forma distribuida.
-El sistema de monitorización elegido para este ejercicio ha sido Nagios en función 
+El sistema de monitorización elegido para este ejercicio ha sido Nagios en función de análisis realizados por la comunidad teniendo en cuenta distintos criterios entre los que se encuentran:
+
+\begin{itemize}
+	\item Número de stars en el repositorio de GitHub \cite{p4}
+	\item Popularidad de búsquedas en Google (Trends) \cite{p5}
+	\item Facilidad en la instalación
+\end{itemize}
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\label{lsblk}
+	\includegraphics[width=0.8\textwidth]{./p4.png}
+	\caption{Análisis de la popularidad en Google de los distintos sistemas de monitorización a lo largo del tiempo.} 
+\end{figure}
+
+Cabe señalar que el core (núcleo) de Nagios es Open Source y el código está disponible para todo aquel que desee colaborar con él en la plataforma GitHub \cite{p4}. A pesar de este factor, no todos los módulos son libres y gratuitos si no que se ofrecen soluciones más potentes en una versión Enterprise desde su plataforma oficial bajo una suscripción de pago. 
+	
 
 \section{Infraestructura Virtual}
 
@@ -115,12 +131,23 @@ Una vez terminadas las configuraciones relacionadas con el entorno virtual hay q
 
 Los experimentos consistirán en la generación de distinto nivel de tráfico para comprobar el rendimiento y la ganancia en prestaciones que se produce al escalar el clúster. Estas labores se realizarán a partir del análisis de los resultados de un monitor de recursos para dispositivos en red como es Nagios.
 
-\section{Despliegue de Nagios}
+\section{Despliegue y configuración de Nagios}
 
 Antes de usar Nagios lógicamente hay que instalarlo, por tanto hay que acudir a la web oficial de la plataforma y se descarga su código fuente para seguidamente instalarlo. Se necesita un compilador de C y la herramienta Make de GNU para realizar la instalación además de un sistema operativo de tipo Unix (Linux, FreeBSD, NetBSD, Solaris) \cite{p1}
 Desde la web oficial también han querido ofrecer una solución para aquellos usuarios de sistemas operativos basados en NT (Windows), por tanto han provisto de una máquina virtual predeterminada con un sistema operativo CentOS y con Nagios pre-instalado.
 Esta última opción es la más adecuada para el escenario que en este trabajo se pretende realizar, ya que al tratarse de un entorno virtual formado por distintas máquinas en un segmento de red, el uso de esta solución añade un nodo más al segmento y evita el proceso de instalación, siendo la solución más comoda y rápida de desplegar. \cite{p2}
 Una vez descargada la máquina virtual del sitio web oficial, se procede a abrirla con el mismo hipervisor que se usaba para las demás máquinas del clúster: VMWare Workstation.
+
+Una vez desplegada y arrancada la nueva máquina CentOS, la infraestructura virtual se encuentra en el siguiente estado:
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\label{lsblk}
+	\includegraphics[width=0.8\textwidth]{./p3.png}
+	\caption{Infraestructura virtual tras el despliegue del servidor con Nagios} 
+\end{figure}
+
+Esta es la primera pantalla con la que el usuario se encuentra tras arrancar la máquina, las credenciales son facilitadas en la pantalla de inicio:
 
 \begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
 	\centering
@@ -129,8 +156,35 @@ Una vez descargada la máquina virtual del sitio web oficial, se procede a abrir
 	\caption{Aspecto de la máquina virtual bajo CentOS con Nagios preinstalado} 
 \end{figure}
 
-Cabe señalar que en esta versión se incluyen módulos
+Cabe señalar que en esta versión se incluyen módulos propios de la versión de pago, por tanto se ofrecen 60 días de prueba en la máquina virtual proporcionada. Los servicios en los que se diferencian la versión gratuita (core) y la versión de pago son algunos de los siguientes: \cite{p6}
 
+\begin{itemize}
+	\item Exportar reportes en XLS, PDF
+	\item Gráficos de rendimiento
+	\item Planificación de reportes
+	\item Panel de usuario avanzado
+	\item Acciones personalizables
+	\item Interfaz web para la configuración
+	\item Integración con Google Maps
+	\item Automatización y planificación de backups
+	\item Actualizaciones a través de interfaz web
+\end{itemize}
+
+Ya está todo listo para acceder a la interfaz web que proporciona Nagios desde cualquier cliente en el mismo segmento de la red. Al acceder hay que aceptar los 60 días de prueba, tras lo cual se presenta una web con el siguiente aspecto:
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\label{lsblk}
+	\includegraphics[width=0.8\textwidth]{./p5.png}
+	\caption{Terminando de instalar Nagios desde la interfaz web} 
+\end{figure}
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\label{lsblk}
+	\includegraphics[width=0.8\textwidth]{./p6.png}
+	\caption{Interfaz web de Nagios} 
+\end{figure}
 
 \section{Fase experimental}
 
