@@ -9,12 +9,13 @@
 %	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
 %----------------------------------------------------------------------------------------
 
-\documentclass[paper=a4, fontsize=11pt]{scrartcl} % A4 paper and 11pt font size
+\documentclass[paper=a4, fontsize=12pt]{scrartcl} % A4 paper and 11pt font size
 
 % ---- Entrada y salida de texto -----
 
 \usepackage[T1]{fontenc} % Use 8-bit encoding that has 256 glyphs
 \usepackage[utf8]{inputenc}
+\usepackage{blindtext}
 %\usepackage{fourier} % Use the Adobe Utopia font for the document - comment this line to return to the LaTeX default
 
 % ---- Idioma --------
@@ -88,23 +89,52 @@
 \newpage
 
 
-
 \section{Introducción}
-En este documento se pretende explicar de forma guiada el proceso de instalación y uso de software para monitorización de recursos en un entorno de clúster o granja de servidores, así como ilustrar mediante ejemplos casos prácticos para aplicar en entornos reales de producción. A modo de ejemplo se realizarán una serie de experimentos con el fin de mostrar el comportamiento de este tipo de software y en qué medida es útil para el administrador de sistemas. Se ha escogido Ubuntu Server 16.0 como sistema operativo a instalar en las máquinas, en las cuales se desplegará un sistema de comunicación entre sí 
+En este documento se pretende explicar de forma guiada el proceso de instalación y uso de software para monitorización de recursos en un entorno de clúster o granja de servidores, así como ilustrar mediante casos prácticos la forma de aplicarlos  en entornos reales de producción. A modo de ejemplo se realizarán una serie de experimentos con el fin de mostrar el comportamiento de este tipo de software y en qué medida es útil para el administrador de sistemas. Se ha escogido Ubuntu Server 16.0 como sistema operativo a utilizar en las máquinas, las cuales tendrán desplegados distintos servicios para que funcionen de forma distribuida.
+El sistema de monitorización elegido para este ejercicio ha sido Nagios en función 
 
 \section{Infraestructura Virtual}
 
+Se utilizó VMWare Workstation como hipervisor para la creación de las máquinas virtual y el entorno de red en el que se encuentran. Este escenario responde al siguiente esquema:
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\label{lsblk}
+	\includegraphics[width=0.8\textwidth]{./p1.png}
+	\caption{Escenario virtual en el que se instalaron los distintos servicios} 
+\end{figure}
+
+
 \section{Servicios}
+
+Una vez terminadas las configuraciones relacionadas con el entorno virtual hay que instalar los servicios que van a proporcionarse desde el clúster. Para este ejercicio se han desplegado distintos servicios relacionados con el ámbito web, entre los que se encuentran:
+\begin{itemize}
+	\item Servidor web Apache
+	\item Servidor de bases de datos MySQL
+\end{itemize}
+
+Los experimentos consistirán en la generación de distinto nivel de tráfico para comprobar el rendimiento y la ganancia en prestaciones que se produce al escalar el clúster. Estas labores se realizarán a partir del análisis de los resultados de un monitor de recursos para dispositivos en red como es Nagios.
 
 \section{Despliegue de Nagios}
 
-\section{Introducción}
+Antes de usar Nagios lógicamente hay que instalarlo, por tanto hay que acudir a la web oficial de la plataforma y se descarga su código fuente para seguidamente instalarlo. Se necesita un compilador de C y la herramienta Make de GNU para realizar la instalación además de un sistema operativo de tipo Unix (Linux, FreeBSD, NetBSD, Solaris) \cite{p1}
+Desde la web oficial también han querido ofrecer una solución para aquellos usuarios de sistemas operativos basados en NT (Windows), por tanto han provisto de una máquina virtual predeterminada con un sistema operativo CentOS y con Nagios pre-instalado.
+Esta última opción es la más adecuada para el escenario que en este trabajo se pretende realizar, ya que al tratarse de un entorno virtual formado por distintas máquinas en un segmento de red, el uso de esta solución añade un nodo más al segmento y evita el proceso de instalación, siendo la solución más comoda y rápida de desplegar. \cite{p2}
+Una vez descargada la máquina virtual del sitio web oficial, se procede a abrirla con el mismo hipervisor que se usaba para las demás máquinas del clúster: VMWare Workstation.
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\label{lsblk}
+	\includegraphics[width=0.8\textwidth]{./p2.png}
+	\caption{Aspecto de la máquina virtual bajo CentOS con Nagios preinstalado} 
+\end{figure}
+
+Cabe señalar que en esta versión se incluyen módulos
 
 
+\section{Fase experimental}
 
-
-
-
+\section{Conclusiones}
 
 
 \bibliographystyle{unsrt} % hay varias formas de citar
