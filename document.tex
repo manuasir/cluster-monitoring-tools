@@ -27,14 +27,15 @@
 \usepackage{amsmath,amsfonts,amsthm} % Math packages
 %\usepackage{graphics,graphicx, floatrow} %para incluir imágenes y notas en las imágenes
 \usepackage{graphics,graphicx, float} %para incluir imágenes y colocarlas
-
+\usepackage{color}
 % Para hacer tablas comlejas
 %\usepackage{multirow}
 %\usepackage{threeparttable}
-
+\definecolor{dkgreen}{rgb}{0,0.6,0}
 %\usepackage{sectsty} % Allows customizing section commands
 %\allsectionsfont{\centering \normalfont\scshape} % Make all sections centered, the default font and small caps
-
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
 \usepackage{fancyhdr} % Custom headers and footers
 \usepackage{url} % Custom headers and footers
 \pagestyle{fancyplain} % Makes all pages in the document conform to the custom headers and footers
@@ -53,6 +54,22 @@
 	version={3.0},
 ]{doclicense}
 
+\lstset{frame=tb,
+	language=C,
+	aboveskip=3mm,
+	belowskip=3mm,
+	showstringspaces=false,
+	columns=flexible,
+	basicstyle={\small\ttfamily},
+	numbers=none,
+	numberstyle=\tiny\color{gray},
+	keywordstyle=\color{blue},
+	commentstyle=\color{dkgreen},
+	stringstyle=\color{mauve},
+	breaklines=true,
+	breakatwhitespace=true,
+	tabsize=3
+}
 
 \setlength\parindent{0pt} % Removes all indentation from paragraphs - comment this line for an assignment with lots of text
 
@@ -130,7 +147,72 @@ Una vez terminadas las configuraciones relacionadas con el entorno virtual hay q
 \end{itemize}
 
 Los experimentos consistirán en la generación de distinto nivel de tráfico para comprobar el rendimiento y la ganancia en prestaciones que se produce al escalar el clúster. Estas labores se realizarán a partir del análisis de los resultados de un monitor de recursos para dispositivos en red como es Nagios.
+Se instalaron tres servidores Ubuntu Server en máquinas virtuales en VMWare Workstation, de los cuales uno tendrá funciones de balanceo de carga. El segmento de red en que se encuentran es el 192.168.0.0/24 y las prestaciones de las máquinas son las siguientes:
+La configuración que se les asignó a los servidores es la siguiente:
+\begin{itemize}
+	\item 512 MB de memoria RAM
+	\item 1 procesador multithread con 2 cores
+	\item 20 GB de almacenamiento
+	\item Tarjetas de red Fast Ethernet
+\end{itemize}
 
+El fin del clúster es conseguir la sincronización de todo el sitio web que hay en el servidor principal en todos aquellos servidores que se añadan al clúster de forma automática para que todos los nodos cuenten con la misma versión de los ficheros alojados en \textbackslash var \textbackslash www
+Una vez que se haya comprobado la conectividad entre las máquinas, se procede a realizar la generación de claves públicas y privadas y habilitar el acceso SSH en cada máquina. En primer lugar se modifica el fichero \textbackslash etc \textbackslash ssh \textbackslash sshd\_config en la máquina principal para habilitar la linea PermitRootLogin a 'yes' y así permitir que el usuario root pueda conectarse remotamente. El siguiente paso es generar claves públicas y privadas en el servidor secundario para permitir la sincronización de archivos mediante scripts sin que pida la contraseña.
+
+\begin{lstlisting}
+$ ssh-keygen -t dsa
+\end{lstlisting}
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\label{lsblk}
+	\includegraphics[width=0.8\textwidth]{./p7.png}
+	\caption{Generación de clave en servidor} 
+\end{figure}
+
+Una vez creadas las credenciales,se añade la pública en el servidor principal para que 'conozca' al otro servidor.
+\begin{lstlisting}
+$ ssh-copy-id -i /root/.ssh/id_dsa.pub root@192.168.0.166
+\end{lstlisting}
+
+Finalizado éste punto ya es posible acceder al servidor principal sin necesidad de contraseña, a continuación se creará un script que se ejecutará de forma programada y en el que se automatizará la clonación del espacio del servidor web de una máquina a la otra. Para ello se creó un script en la máquina secundaria llamado 'actualizar.sh' en el cual se ejecuta el comando rsync para copiar y sincronizar los contenidos vía red, la intención es que el script se ejecute una vez cada hora. Por tanto se ha de modificar el fichero de configuración de 'cron' sito en \textbackslash etc \textbackslash crontab. El contenido del script es simple ya que contiene únicamente la orden necesaria:
+
+\begin{lstlisting}
+// actualizar.sh
+rsync -avz --delete --exclude=**/stats --exclude=**/error --exclude=**/files/pictures -e "ssh -l root" root@192.168.0.166:/var/www/ /var/www/
+\end{lstlisting}
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\label{lsblk}
+	\includegraphics[width=0.8\textwidth]{./p8.png}
+	\caption{Fichero de configuración crontab. Script actualizar.sh se ejecutará cada hora y clonará el espacio web del servidor principal en el secundario} 
+\end{figure}
+
+Ahora es el turno de la configuración del servidor que realizará funciones de balanceo de carga, el primer paso es instalar Nginx como software de balanceo. Hay que segurarse de que no se cuenta con servidor web instalado en la máquina que pudiera apropiarse del puerto 80.
+Hay que añadir el repositorio a la lista de repositorios del sistema
+\begin{itemize}
+	\item echo "deb-src http://nginx.org/packages/ubuntu/ lucid nginx" >> /etc/apt/sources.list
+	\item echo "deb http://nginx.org/packages/ubuntu/ lucid nginx" >> /etc/apt/sources.list
+
+\end{itemize}
+
+Finalmente actualizar la lista y descargar el paquete:
+
+\begin{itemize}
+	\item sudo apt-get update
+	\item sudo apt-get install nginx
+\end{itemize}
+
+Ya sólo queda configurar Nginx como balanceador de carga. Para configurar el servicio se ha de modificar el fichero de configuración situado en \textbackslash etc \textbackslash nginx \textbackslash conf.d \textbackslash default.conf. Como siempre, el primer paso antes de modificar ficheros de configuración es realizar una copia de seguridad del mismo por los futuros problemas que pudieran encontrarse (y que con probabilidad se encontrarán).
+El fichero de configuración queda de la siguiente manera:
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\label{lsblk}
+	\includegraphics[width=0.8\textwidth]{./p10.png}
+	\caption{Fichero de configuración de nginx} 
+\end{figure}
+En el fichero se aprecia de forma intuitiva cómo se añaden los servidores web en un grupo que se ha llamado como 'apaches', en el que están las direcciones IP de cada uno. Cada vez que se añada un nodo al clúster deberá añadirse una línea nueva a este fichero. El parámetro weight es el peso con el que funcionará el balanceo.
 \section{Despliegue y configuración de Nagios}
 
 Antes de usar Nagios lógicamente hay que instalarlo, por tanto hay que acudir a la web oficial de la plataforma y se descarga su código fuente para seguidamente instalarlo. Se necesita un compilador de C y la herramienta Make de GNU para realizar la instalación además de un sistema operativo de tipo Unix (Linux, FreeBSD, NetBSD, Solaris) \cite{p1}
@@ -186,6 +268,8 @@ Ya está todo listo para acceder a la interfaz web que proporciona Nagios desde 
 	\caption{Interfaz web de Nagios} 
 \end{figure}
 
+Como se aprecia, el panel principal se encuentra en blanco. Por tanto hay que añadir nuevas fuentes desde las que analizar los servicios.
+En primera instancia la fuente principal será el balanceador de carga del sistema. 
 \section{Fase experimental}
 
 \section{Conclusiones}
