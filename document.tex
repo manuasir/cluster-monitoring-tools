@@ -213,7 +213,72 @@ El fichero de configuración queda de la siguiente manera:
 	\caption{Fichero de configuración de nginx} 
 \end{figure}
 En el fichero se aprecia de forma intuitiva cómo se añaden los servidores web en un grupo que se ha llamado como 'apaches', en el que están las direcciones IP de cada uno. Cada vez que se añada un nodo al clúster deberá añadirse una línea nueva a este fichero. El parámetro weight es el peso con el que funcionará el balanceo.
+
+En un servidor de estas características es habitual contar además con un servidor de bases de datos en la plataforma web, y de la misma manera ha de encontrarse replicado en todos los nodos del clúster. Para esto se va a instalar un servidor de bases de datos MySQL en un servidor 'maestro' para luego ser replicadas en nodos 'esclavos'.
+En primer lugar se creó una base de datos llamada 'contactos' , la cual almacenará una tabla con dos campos, nombre y teléfono. Se insertaron algunos registros en ella:
+
+\begin{lstlisting}
+mysql>  insert into datos(nombre,tlf) values ("manu",660773539);
+Query OK, 0 rows affected (0,01 sec)
+\end{lstlisting}
+
+MySQL provee mecanismos para la sincronización de bases de datos vía red, para ello hay que modificar el fichero de configuración 'my.conf' de la siguiente manera:
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\label{lsblk}
+	\includegraphics[width=0.8\textwidth]{./p11.png}
+	\caption{Fichero de configuración my.conf para asignar un ID al servidor 'maestro'} 
+\end{figure}
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\label{lsblk}
+	\includegraphics[width=0.8\textwidth]{./p12.png}
+	\caption{Fichero de configuración my.conf para asignar un ID al servidor 'esclavo'} 
+\end{figure}
+
+En el maestro creamos las credenciales necesarias para la copia, conviene un usuario dedicado exclusivamente a ésta tarea, para ello:
+\begin{lstlisting}
+mysql> CREATE USER esclavo IDENTIFIED BY 'esclavo';
+mysql> GRANT REPLICATION SLAVE ON *.* TO 'esclavo'@'%'
+IDENTIFIED BY 'esclavo';
+mysql> FLUSH PRIVILEGES;
+mysql> FLUSH TABLES;
+mysql> FLUSH TABLES WITH READ LOCK;
+\end{lstlisting}
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\label{lsblk}
+	\includegraphics[width=0.8\textwidth]{./p13.png}
+	\caption{Resultado del comando SHOW MASTER STATUS en mysql en el servidor maestro} 
+\end{figure}
+
+Es el turno de configurar el esclavo, para ello se ejecuta un prompt de mysql e insertar lo siguiente:
+\begin{lstlisting}
+mysql> CHANGE MASTER TO MASTER_HOST='192.168.0.166',
+MASTER_USER='esclavo', MASTER_PASSWORD='esclavo',
+MASTER_LOG_FILE='mysql-bin.000001', MASTER_LOG_POS=501,
+MASTER_PORT=3306;
+\end{lstlisting}
+
+Tras realizar el comando SHOW SLAVE STATUS\textbackslash G; se debe apreciar la información de replicación, en particular el campo \# Seconds\_Behind\_Master está a 0, lo que indica que la configuración es correcta.
+Para comprobar que todo está correcto se puede crear un nuevo contacto en el servidor maestro y comprobar que inmediatamente se encuentre creado en el esclavo.
+
+\begin{lstlisting}
+mysql> SHOW SLAVE STATUS\G
+******************************** 1. row **************************
+Slave_IO_State: Waiting for master event
+Master_Host: 192.168.0.166
+Master_User: esclavo
+Master_Port:3306
+
+\end{lstlisting}
+
 \section{Despliegue y configuración de Nagios}
+
+
 
 Antes de usar Nagios lógicamente hay que instalarlo, por tanto hay que acudir a la web oficial de la plataforma y se descarga su código fuente para seguidamente instalarlo. Se necesita un compilador de C y la herramienta Make de GNU para realizar la instalación además de un sistema operativo de tipo Unix (Linux, FreeBSD, NetBSD, Solaris) \cite{p1}
 Desde la web oficial también han querido ofrecer una solución para aquellos usuarios de sistemas operativos basados en NT (Windows), por tanto han provisto de una máquina virtual predeterminada con un sistema operativo CentOS y con Nagios pre-instalado.
@@ -258,21 +323,125 @@ Ya está todo listo para acceder a la interfaz web que proporciona Nagios desde 
 	\centering
 	\label{lsblk}
 	\includegraphics[width=0.8\textwidth]{./p5.png}
-	\caption{Terminando de instalar Nagios desde la interfaz web} 
+	\caption{Terminando de instalar NagiosXI desde la interfaz web} 
 \end{figure}
 
 \begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
 	\centering
 	\label{lsblk}
 	\includegraphics[width=0.8\textwidth]{./p6.png}
-	\caption{Interfaz web de Nagios} 
+	\caption{Interfaz web de NagiosXI} 
 \end{figure}
 
-Como se aprecia, el panel principal se encuentra en blanco. Por tanto hay que añadir nuevas fuentes desde las que analizar los servicios.
-En primera instancia la fuente principal será el balanceador de carga del sistema. 
+NagiosXI proporciona una serie de configuraciones para realizar labores de monitorización en los servicios que se le indiquen. Para el caso de una granja de servidores web, se van a configurar monitorizaciones en todos los nodos del clúster para alertar en caso de que algún servicio se caiga en un momento no programado.
+En primer lugar hay que crear los hosts en Nagios a partir de sus direcciones IP desde los asistentes que proporciona la interfaz web:
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\label{lsblk}
+	\includegraphics[width=0.8\textwidth]{./p18.png}
+	\caption{Arquitectura del clúster y el sistema de monitorización} 
+\end{figure}
+
+Una vez enlazados los hosts se pueden configurar alertas en función de los requisitos de disponibilidad en los servicios según se configuren. Si todo es correcto, el estado de los servicios debe presentarse de la siguiente manera:
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\label{lsblk}
+	\includegraphics[width=0.8\textwidth]{./p16.png}
+	\caption{Estado de los servicios web en el cluster} 
+\end{figure}
+
+NagiosXI proporciona funcionalidades de monitorización a nivel de recursos generales de las máquinas pero por sí mismo cuenta con limitaciones en lo que a detalles de tráfico y protocolos de red se refiere. Para suplir estas necesidades existe una versión específica de Nagios llamada Nagios Network Analyzer en la cual, bajo suscripción de pago, analiza y procesa este tipo de información generando informes y gráficas con análisis sobre los resultados.
+De nuevo se procede de la misma manera que anteriormente, conviene descargarse la máquina virtual predeterminada con el software preinstalado, conformando un servidor dedicado únicamente a las tareas de monitorización.
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\label{lsblk}
+	\includegraphics[width=0.8\textwidth]{./p17.png}
+	\caption{Pantalla inicial de Nagios Network Analyzer} 
+\end{figure}
+
+Una vez desplegada la máquina ya puede accederse al panel principal desde un navegador web, previa autorización con las credenciales que se proporciona desde el propio sistema.
+Como se puede apreciar, el panel principal se encuentra en blanco. Por tanto hay que añadir nuevas fuentes desde las que analizar los servicios.
+En primera instancia la fuente principal será el balanceador de carga del sistema. Los parámetros a proporcionar serán los siguientes:
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\label{lsblk}
+	\includegraphics[width=0.8\textwidth]{./p21.png}
+	\caption{Creando una fuente en Nagios Network Analyzer} 
+\end{figure}
+
+Los parámetros de conexión a los que se refiere el asistente son los de la máquina que va a recolectar los datos del tráfico que se esté produciendo. Esta tarea la realiza un demonio en el servidor nodo desde el cual se quiera analizar sus interfaces de red, por tanto hay que instalar el demonio 'fprobe' \cite{p7} que es el que indica la documentación de Nagios, ya que el tipo de tráfico que necesita Nagios para analizar y muestrear es del tipo NetFlow, un protocolo creado por CISCO.\cite{p9} Lo habitual es que éstas fuentes para analizar sean routers o switches, aunque también es posible analizar servidores. Para realizarlo hay que ejecutar los siguientes comandos:
+\begin{lstlisting}
+sudo apt-get install fprobe
+sudo su -
+fprobe -i eth2 192.168.0.164:9001
+\end{lstlisting}
+
+La interfaz 'eth2' es en la que se encuentra el segmento de red donde se hallan los servidores de monitorización, y la dirección IP 192.168.0.164 es la dirección del servidor recién desplegado Nagios Network Analyzer (NNA), y el puerto 9001. \cite{p8}
+
+Ahora sólo queda integrar ambos servicios de Nagios, para ello desde NagiosXI y el panel gráfico de administración hay que enlazar el monitor con el servicio de Nagios Network Analyzer.
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\label{lsblk}
+	\includegraphics[width=0.8\textwidth]{./p22.png}
+	\caption{Enlazando NagiosXI con Nagios Network Analyzer} 
+\end{figure}
+
+
 \section{Fase experimental}
 
+Llegados a este punto conviene testear de alguna manera el rendimiento de la red en el clúster web forzándole tráfico de alguna manera para comprobar que el monitor funciona de forma satisfactoria, pudiendo extraer información útil acerca del tráfico que se está generando.
+Mediante la herramienta ab (apache-benchmark) se puede enviar peticiones HTTP al host que se le indique, así que se ha escogido esa herramienta para las siguientes pruebas. \cite{p10}
+
+\begin{lstlisting}
+ab -n 10000 -c 1000 http://192.168.0.162/
+\end{lstlisting}
+
+El parámetro 'n' indica qué número de peticiones van a realizarse a ese host, y el parámetro 'c' se refiere a la concurrencia: el número de peticiones que van a realizarse de forma concurrente.
+Se realizaron dos baterías separadas en el tiempo para ver los resultados reflejados en los análisis del monitor.
+Al cabo de las horas se generaron los siguientes informes:
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\label{lsblk}
+	\includegraphics[width=0.8\textwidth]{./p20.png}
+	\caption{Actividad de red en el host balanceador} 
+\end{figure}
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\label{lsblk}
+	\includegraphics[width=0.8\textwidth]{./c23.png}
+	\caption{Picos de tráfico en el momento en que se está generando de forma forzada mediante AB} 
+\end{figure}
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\label{lsblk}
+	\includegraphics[width=0.8\textwidth]{./c24.png}
+	\caption{Información detallada en el informe del tráfico de red las últimas 24 horas} 
+\end{figure}
+
+Entre ésta información puede extraerse gran cantidad de datos útiles para mejorar el rendimiento del sistema, así como comprobaciones de seguridad ya que se puede ver desde qué peticiones de origen y a qué puertos se están haciendo peticiones, por si hubiese algún host que estuviera monopolizando los recursos de red del servidor.
+
 \section{Conclusiones}
+
+Nagios es una herramienta útil y potente que se vuelve casi imprescindible en escenarios de alta disponibilidad,su coste relativamente bajo hace que en entornos empresariales la inversión merezca la pena al verse reducidos los costes del personal necesario para monitorizar una infraestructura tan compleja como puede ser una granja de servidores web. Otro aspecto muy favorable es el hecho de que puede realizar estimaciones de escalabilidad,optimizando todo el proceso. El sistema de notificaciones garantiza que en caso de error los administradores son inmediatamente avisados vía email, minimizando el impacto que pudiese acontecer.
+En entornos de alta seguridad facilita la gestión de incidencias teniendo un panel administrativo centralizado \cite{p11} desde el cual manejarlas con facilidad. Ayuda con la eficiencia y el uso de los recursos al detectar servicios o procesos redundantes sobre todo en grandes infraestructuras, con el coste operacional que ello ahorra \cite{p12}
+Su popularidad no ha dejado de crecer \cite{p5} y la gran cantidad de empresas que usan ésta solución hace que no sea difícil decantarse por ella a la hora de desplegar un sistema de monitorización robusto, flexible y escalable. Algunas de éstas empresas son: \cite{p13}
+\begin{itemize}
+	\item AT\&T
+	\item McAffy
+	\item Philips
+	\item Toshiba
+	\item LinkSys
+	\item Ubisoft
+	\item Yahoo
+\end{itemize}
 
 
 \bibliographystyle{unsrt} % hay varias formas de citar
